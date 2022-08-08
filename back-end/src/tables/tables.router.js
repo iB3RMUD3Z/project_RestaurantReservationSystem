@@ -14,7 +14,6 @@ router.route("/")
     .all(methodNotAllowed);
 
 router.route("/:table_id/seat")
-    .get(controller.read)
     .put(controller.update)
     .delete(controller.complete)
     .all(methodNotAllowed);

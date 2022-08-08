@@ -3,7 +3,11 @@ const { reservationExists } = require("../reservations/reservations.service");
 const asyncErrorBoundary = require("../errors/asyncErrorBoundary");
 
 /*  
- \  Beginning => Reservations Middeware
+ \  Beginning => Tables Middeware
+*/
+
+/*  
+\   [User Story 4 Feature]
 */
 
 function validateProperties(req, _res, next) {
@@ -19,18 +23,22 @@ function validateProperties(req, _res, next) {
   if (errorMsg) {
     next({
       status: 400,
-      message: errorMsg
+      message: errorMsg,
     });
   }
   return next();
 }
+
+/*  
+\   [User Story 4 Feature]
+*/
 
 async function validReservation(req, res, next) {
   const { data } = req.body;
   if (!data) {
     next({
       status: 400,
-      message: "Data is missing."
+      message: "Data is missing.",
     });
   }
 
@@ -38,7 +46,7 @@ async function validReservation(req, res, next) {
   if (!reservation_id) {
     next({
       status: 400,
-      message: "Missing reservation_id."
+      message: "Missing reservation_id.",
     });
   }
 
@@ -46,12 +54,16 @@ async function validReservation(req, res, next) {
   if (!reservation) {
     next({
       status: 404,
-      message: `Reservation ${reservation_id} cannot be found.`
+      message: `Reservation ${reservation_id} cannot be found.`,
     });
   }
   res.locals.reservation = reservation;
   return next();
 }
+
+/*  
+\   [User Story 4 Feature]
+*/
 
 async function tableExists(req, res, next) {
   const { table_id } = req.params;
@@ -60,48 +72,63 @@ async function tableExists(req, res, next) {
   if (table) {
     res.locals.table = table;
     return next();
+  } else {
+    next({
+      status: 404,
+      message: `Table ${table_id} does not exist.`,
+    });
   }
-  next({
-    status: 404,
-    message: `Table ${table_id} does not exist.`
-  });
 }
 
+/*  
+\   [User Story 4 Feature]
+*/
+
 function tableReqs(_req, res, next) {
-  const { table_id, capacity, reservation_id } = res.locals.table;
+  const { reservation_id, capacity } = res.locals.table;
 
   if (reservation_id) {
     next({
       status: 400,
-      message: "Table occupied."
+      message: "Table occupied.",
     });
   } else if (res.locals.reservation.people > capacity) {
     next({
       status: 400,
-      message: `Your party exceeds the capacity for table ${table_id}.`
+      message: `Your party exceeds the capacity for this table.`,
     });
   }
   return next();
 }
 
-function isTableOccupied(_req, res, next) {
+/*  
+\   [User Story 5 Feature]
+*/
+
+async function isTableOccupied(_req, res, next) {
   if (!res.locals.table.reservation_id) {
     next({
       status: 400,
-      message: "Table not occupied."
+      message: "Table not occupied.",
     });
+  } else {
+    return next();
   }
-  return next();
 }
+
+/*  
+\   [User Story 6 Feature]
+*/
 
 function reservationStatus(_req, res, next) {
   if (res.locals.reservation.status === "seated") {
     next({
       status: 400,
-      message: `Reservation ${reservation_id} has already been seated.`
+      message: `Reservation has already been seated.`,
     });
+  } else {
+    return next();
   }
-  return next();
 }
 
 /*  
@@ -110,7 +137,6 @@ function reservationStatus(_req, res, next) {
 
 /*  
 \   [User Story 4 Feature]
- \  Creates => New Table
 */
 
 async function create(req, res) {
@@ -119,17 +145,33 @@ async function create(req, res) {
 }
 
 /*  
-  \   [User Story 4 Feature]
-   \  Lists => Tables
-  */
+\   [User Story 4 Feature]
+*/
 
 async function list(_req, res) {
   const data = await service.list();
   res.json({ data });
 }
 
-function update(_req, res) {
-  res.status(200);
+/*  
+\   [User Story 6 Feature]
+*/
+
+async function update(_req, res) {
+  const data = await service.update({
+    reservation_id: res.locals.reservation.reservation_id,
+    table_id: res.locals.table.table_id,
+  });
+  res.sendStatus(200).json({ data });
+}
+
+/*  
+\   [User Story 6 Feature]
+*/
+
+async function reservationComplete(_req, res) {
+  const data = await service.reservationComplete(res.locals.table);
+  res.sendStatus(200).json({ data });
 }
 
 module.exports = {
@@ -140,8 +182,11 @@ module.exports = {
     reservationStatus,
     asyncErrorBoundary(tableExists),
     tableReqs,
-    update
+    asyncErrorBoundary(update),
   ],
-  read: asyncErrorBoundary(tableExists),
-  complete: [asyncErrorBoundary(tableExists), isTableOccupied]
+  complete: [
+    asyncErrorBoundary(tableExists),
+    isTableOccupied,
+    asyncErrorBoundary(reservationComplete),
+  ],
 };

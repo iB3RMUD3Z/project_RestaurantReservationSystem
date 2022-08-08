@@ -5,7 +5,11 @@ const asyncErrorBoundary = require("../errors/asyncErrorBoundary");
  \  Beginning => Reservations Middeware
 */
 
-function validateProperties(req, _res, next) {
+/*  
+\   [User Story 1 Feature]
+*/
+
+function reservationateProperties(req, _res, next) {
   const {
     data: {
       first_name,
@@ -14,8 +18,8 @@ function validateProperties(req, _res, next) {
       people,
       reservation_date,
       reservation_time,
-      status
-    } = {}
+      status,
+    } = {},
   } = req.body;
 
   let errorMsg;
@@ -31,10 +35,9 @@ function validateProperties(req, _res, next) {
     errorMsg = "A reservation_date is REQUIRED for reservations.";
   else if (!reservation_time || !reservation_time.match(/\d{2}:\d{2}/))
     errorMsg = "A reservation_time is REQUIRED for reservations.";
-/*  
+  /*  
 \   [User Story 6 Feature]
-*/
-  else if (status === "seated")
+*/ else if (status === "seated")
     errorMsg = "This reservation is already seated.";
   else if (status === "finished")
     errorMsg = "This reservation is already finished.";
@@ -42,11 +45,15 @@ function validateProperties(req, _res, next) {
   if (errorMsg) {
     next({
       status: 400,
-      message: errorMsg
+      message: errorMsg,
     });
   }
   return next();
 }
+
+/*  
+\   [User Story 1 Feature]
+*/
 
 async function reservationExists(req, res, next) {
   const { reservation_id } = req.params;
@@ -58,11 +65,15 @@ async function reservationExists(req, res, next) {
   }
   next({
     status: 404,
-    message: `Reservation ${reservation_id} does not exist.`
+    message: `Reservation ${reservation_id} does not exist.`,
   });
 }
 
-function validDate(req, _res, next) {
+/*  
+\   [User Story 2 Feature]
+*/
+
+function reservationDate(req, _res, next) {
   let { reservation_date } = req.body.data;
   reservation_date = new Date(reservation_date);
   const today = new Date();
@@ -79,53 +90,55 @@ function validDate(req, _res, next) {
   if (errorMsg) {
     next({
       status: 400,
-      message: errorMsg
+      message: errorMsg,
     });
   }
   return next();
 }
 
-function validTime(req, _res, next) {
+/*  
+\   [User Story 3 Feature]
+*/
+
+function reservationTime(req, _res, next) {
   const { reservation_time } = req.body.data;
 
   if (reservation_time < "10:30" || reservation_time > "21:30") {
     next({
       status: 400,
       message:
-        "Unfortunately, we are closed at that time. Please select a different time."
+        "Unfortunately, we are closed at that time. Please select a different time.",
     });
   }
   return next();
 }
 
-function validStatus(req, _res, next) {
-  const update = req.body.data;
-  const statusUpdate = update.status;
-  const validStatus = ["booked", "seated", "finished", "cancelled"];
+function reservationStatus(req, res, next) {
+  const { status } = req.body.data;
+  const reservationStatus = ["booked", "seated", "finished", "cancelled"];
 
-  if (!validStatus.includes(statusUpdate)) {
+  if (!reservationStatus.includes(status)) {
     next({
       status: 400,
-      message: "unknown status"
+      message: "unknown status",
     });
   }
-  if (status === "finished") {
+  if (res.locals.reservation.status === "finished") {
     next({
       status: 400,
-      message: "A finished reservation cannot be updated."
+      message: "A finished reservation cannot be updated.",
     });
   }
-  res.locals.update = update
+  res.locals.status = status;
   return next();
 }
 
-/*  
- \  End => Reservations Middeware
+/*                                 
+ \  End => Reservations Middeware  
 */
 
 /*  
 \   [User Story 1 Feature]
- \  Creates => New Reservation
 */
 
 async function create(req, res) {
@@ -135,38 +148,71 @@ async function create(req, res) {
 
 /*  
 \   [User Story 1 Feature]
- \  Lists => Reservations For Date => By Time
 */
 
 async function list(req, res) {
-  const { date } = req.query;
+  const { date, mobile_number } = req.query;
   if (date) {
     const data = await service.list(date);
     res.json({ data });
+/*  
+\   [User Story 7 Feature]
+*/
+  } else if (mobile_number) {
+    const data = await service.search(mobile_number);
+    res.json({ data });
   }
 }
+
+/*  
+\   [User Story 4 Feature]
+*/
 
 function read(_req, res) {
   res.json({ data: res.locals.reservation });
 }
 
-async function updateStatus(_req, res) {
-  const reservation = res.locals.reservation;
-  const { reservation_id } = reservation;
+/*  
+\   [User Story 6 Feature]
+*/
 
-  const updatedReservation = { ...reservation, ...res.locals.update };
-  const data = await service.update(reservation_id, updatedReservation);
+async function updateStatus(_req, res) {
+  const data = await service.update({
+    reservation_id: res.locals.reservation.reservation_id,
+    status: res.locals.status,
+  });
+  res.status(200).json({ data });
+}
+
+/*  
+\   [User Story 8 Feature]
+*/
+
+async function update(req, res) {
+  const data = await service.update(req.body.data);
   res.status(200).json({ data });
 }
 
 module.exports = {
   create: [
-    validateProperties,
-    validDate,
-    validTime,
-    asyncErrorBoundary(create)
+    reservationateProperties,
+    reservationDate,
+    reservationTime,
+    asyncErrorBoundary(create),
   ],
   list: asyncErrorBoundary(list),
   read: [asyncErrorBoundary(reservationExists), read],
-  status: [asyncErrorBoundary(reservationExists), asyncErrorBoundary(updateStatus)]
+  status: [
+    asyncErrorBoundary(reservationExists),
+    reservationStatus,
+    asyncErrorBoundary(updateStatus),
+  ],
+  update: [
+    asyncErrorBoundary(reservationExists),
+    reservationateProperties,
+    reservationDate,
+    reservationTime,
+    reservationStatus,
+    asyncErrorBoundary(update),
+  ],
 };
