@@ -113,6 +113,10 @@ function reservationTime(req, _res, next) {
   return next();
 }
 
+/*  
+\   [User Story 6 Feature]
+*/
+
 function reservationStatus(req, res, next) {
   const { status } = req.body.data;
   const reservationStatus = ["booked", "seated", "finished", "cancelled"];
@@ -181,7 +185,7 @@ async function updateStatus(_req, res) {
     reservation_id: res.locals.reservation.reservation_id,
     status: res.locals.status,
   });
-  res.status(200).json({ data });
+  res.json({ data });
 }
 
 /*  
@@ -190,7 +194,7 @@ async function updateStatus(_req, res) {
 
 async function update(req, res) {
   const data = await service.update(req.body.data);
-  res.status(200).json({ data });
+  res.json({ data });
 }
 
 module.exports = {

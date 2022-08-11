@@ -33,6 +33,7 @@ function tableExists(table_id) {
 
 async function update({ reservation_id, table_id }) {
   const trx = await knex.transaction();
+  let updatedTable = {};
   return trx("reservations")
     .where({ reservation_id })
     .update({ status: "seated" }, "*")
@@ -40,7 +41,7 @@ async function update({ reservation_id, table_id }) {
       trx("tables")
         .where({ table_id })
         .update({ reservation_id }, "*")
-        .then((updatedTable) => updatedTable[0])
+        .then((results) => (updatedTable = results[0]))
     )
     .then(trx.commit)
     .then(() => updatedTable)

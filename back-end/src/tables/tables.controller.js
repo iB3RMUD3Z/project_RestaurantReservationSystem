@@ -162,7 +162,7 @@ async function update(_req, res) {
     reservation_id: res.locals.reservation.reservation_id,
     table_id: res.locals.table.table_id,
   });
-  res.sendStatus(200).json({ data });
+  res.json({ data });
 }
 
 /*  
@@ -171,7 +171,7 @@ async function update(_req, res) {
 
 async function reservationComplete(_req, res) {
   const data = await service.reservationComplete(res.locals.table);
-  res.sendStatus(200).json({ data });
+  res.json({ data });
 }
 
 module.exports = {

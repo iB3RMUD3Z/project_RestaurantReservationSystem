@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { listReservations } from "../utils/api";
+import useQuery from "../utils/useQuery";
 import ErrorAlert from "../layout/ErrorAlert";
+import DashListReservations from "./DashListReservations";
+import DashListTables from "./DashListTables";
+import DashButtons from "./DashButtons";
 
 /**
  * Defines the dashboard page.
@@ -11,26 +15,39 @@ import ErrorAlert from "../layout/ErrorAlert";
 function Dashboard({ date }) {
   const [reservations, setReservations] = useState([]);
   const [reservationsError, setReservationsError] = useState(null);
+  const [reservationsDate, setReservationsDate] = useState(date);
 
-  useEffect(loadDashboard, [date]);
+  const query = useQuery();
+  const queryDate = query.get("date");
 
-  function loadDashboard() {
+  useEffect(() => {
+    if (queryDate) {
+      setReservationsDate(queryDate);
+    }
+  }, [queryDate]);
+
+  useEffect(loadReservations, [reservationsDate]);
+
+  function loadReservations() {
     const abortController = new AbortController();
     setReservationsError(null);
-    listReservations({ date }, abortController.signal)
+    listReservations({ date: reservationsDate }, abortController.signal)
       .then(setReservations)
       .catch(setReservationsError);
     return () => abortController.abort();
   }
-
+  
   return (
     <main>
-      <h1>Dashboard</h1>
-      <div className="d-md-flex mb-3">
-        <h4 className="mb-0">Reservations for date</h4>
-      </div>
+      <h1 className="mt-lg-4 mt-1 mb-3">Dashboard</h1>
+      <h4 className="mb-1">Reservations for Date: {reservationsDate}</h4>
+      <DashButtons reservationsDate={reservationsDate} />
       <ErrorAlert error={reservationsError} />
-      {JSON.stringify(reservations)}
+      <DashListReservations
+        reservations={reservations}
+        loadReservations={loadReservations}
+      />
+      <DashListTables loadReservations={loadReservations} />
     </main>
   );
 }
