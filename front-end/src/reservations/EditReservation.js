@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useHistory } from "react-router-dom";
-import ErrorAlert from "../../layout/ErrorAlert";
-import { readReservation, updateReservation } from "../../utils/api";
-import ReservationForm from "../new/ReservationForm";
+import ErrorAlert from "../layout/ErrorAlert";
+import { readReservation, updateReservation } from "../utils/api";
+import ReservationForm from "./ReservationForm";
 
 function EditReservation() {
   const [reservation, setReservation] = useState({
@@ -31,6 +31,7 @@ function EditReservation() {
     event.preventDefault();
     const abortController = new AbortController();
     setError(null);
+    reservation.people = Number(reservation.people);
     updateReservation(reservation, abortController.signal)
       .then(() =>
         history.push(`/dashboard?date=${reservation.reservation_date}`)

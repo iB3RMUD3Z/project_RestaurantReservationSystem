@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useHistory } from "react-router-dom";
-import { createReservation } from "../../utils/api";
-import ErrorAlert from "../../layout/ErrorAlert";
+import { createReservation } from "../utils/api";
+import ErrorAlert from "../layout/ErrorAlert";
 import ReservationForm from "./ReservationForm";
 
 function NewReservation() {
@@ -21,6 +21,7 @@ function NewReservation() {
     event.preventDefault();
     const abortController = new AbortController();
     setError(null);
+    reservation.people = Number(reservation.people);
     createReservation(reservation, abortController.signal)
       .then(() =>
         history.push(`/dashboard?date=${reservation.reservation_date}`)

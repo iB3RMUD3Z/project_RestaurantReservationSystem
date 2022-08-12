@@ -23,6 +23,7 @@ function NewTable() {
     event.preventDefault();
     const abortController = new AbortController();
     setError(null);
+    table.capacity = Number(table.capacity);
     createTable(table, abortController.signal)
       .then(() => history.push("/"))
       .catch(setError);

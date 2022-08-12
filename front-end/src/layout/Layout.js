@@ -22,7 +22,7 @@ function Layout() {
           <img
             src="/images/restaurant-lighting-1.jpg"
             className="img-fluid"
-            alt="Dashboard banner"
+            alt="Dashboard Banner"
           ></img>
           <div style={{ padding: "15px" }}>
             <Routes />
